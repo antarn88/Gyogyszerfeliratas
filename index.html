@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="hu">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gyógyszerfeliratás</title>
+    <link rel="icon" href="favicon.png">
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+    <h1 id="title"><a href="javascript:titleAction();">Gyógyszerfelíratás</a></h1>
+
+    <div id="profile-selector">
+        <p>Válaszd ki a személyes profilt!</p>
+        <p>Kattints a Fájl kiválasztása/Tallózás gombra, vagy húzd ide a fájlt!</p>
+        <input type="file" id="personal-profile-file" accept=".txt">
+    </div>
+
+    <div id="alert-div" class="alert alert-danger"></div>
+
+    <div id="gyogyszer-container">
+        <p id="szukseges-gyogyszerek-label">Szükséges gyógyszer(ek):</p>
+    </div>
+
+    <div id="gyogyszerlistaContainer">
+        <h2 id="lista-title"></h2>
+        <h4 id="lista-subtitle"></h4>
+    </div>
+
+    <div id="print-section">
+        <button id="print-btn" class="btn btn-primary" onclick="PrintElem()">Nyomtatás</button>
+    </div>
+
+    <script src="js/main.js"></script>
+</body>
+
+</html>

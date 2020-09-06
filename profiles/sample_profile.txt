@@ -1,0 +1,6 @@
+Személy neve|2000.01.01.|123 456 789
+Gyógyszer röviden1|Gyógyszer neve hosszan1
+Gyógyszer röviden2|Gyógyszer neve hosszan2
+Gyógyszer röviden3|Gyógyszer neve hosszan3
+Gyógyszer röviden4|Gyógyszer neve hosszan4
+Gyógyszer röviden5|Gyógyszer neve hosszan5
