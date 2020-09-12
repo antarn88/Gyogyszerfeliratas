@@ -25,7 +25,7 @@ personalProfileFile.addEventListener("change", readProfileFile);
 // Create profile modal stuffs
 createProfileButton.onclick = function () {
     createProfileModal.style.display = "block";
-    document.querySelector("#nev").focus()
+    document.querySelector("#nev").focus();
 }
 
 closeButton.onclick = function () {
@@ -93,12 +93,12 @@ function readProfileFile() {
     let file = personalProfileFile.files[0];
 
     if (String(file.name).endsWith(".txt")) {
-        hideNewProfileBtn();
+
         let reader = new FileReader();
 
         reader.onload = function () {
             let rowCounter = 0;
-            let gyogyszerek = []
+            let gyogyszerek = [];
             for (let i = 0; i < this.result.split("\n").length; i++) {
                 let line = String(this.result.split("\n")[i]).replace("\r", "").trim();
 
@@ -132,6 +132,7 @@ function readProfileFile() {
                 }
             }
 
+            if (validProfileFile) hideNewProfileBtn();
             gyogyszerScanner(gyogyszerek);
         };
 
@@ -139,6 +140,7 @@ function readProfileFile() {
             reader.readAsText(file);
             setTimeout(function () {
                 szuksegesGyogyszerekAction(gyogyszerObjects);
+
             }, 100);
         }
     } else {
@@ -152,11 +154,10 @@ function readProfileFile() {
 function gyogyszerScanner(gyogyszerArray) {
     let gyogyszerNameShort;
     let gyogyszerNameLong;
-    let gyogyszerObject;
     for (let i = 0; i < gyogyszerArray.length; i++) {
         gyogyszerNameShort = gyogyszerArray[i].split("|")[0];
         gyogyszerNameLong = gyogyszerArray[i].split("|")[1];
-        gyogyszerObjects.push(gyogyszerObject = {
+        gyogyszerObjects.push({
             gyogyszerId: `gyogyszer_${i}`,
             gyogyszerNameShort: gyogyszerNameShort,
             gyogyszerNameLong: gyogyszerNameLong
@@ -209,7 +210,7 @@ function szuksegesGyogyszerekAction(gyogyszerobjects) {
 function gyogyszerAction(gyogyszerId, gyogyszerNameLong) {
     let checkBox = document.querySelector(`#${gyogyszerId}`);
     if (checkBox.checked === true) {
-        showGyogyszer(gyogyszerId, gyogyszerNameLong)
+        showGyogyszer(gyogyszerId, gyogyszerNameLong);
         selectedItems++;
         hideUnnecessaryItems();
     } else {
@@ -260,7 +261,7 @@ function PrintElem() {
     gyogyszerlistaContainer.style.borderBottom = "1px dotted black";
     gyogyszerlistaContainer.style.padding = "30px";
     listaTitle.style.textAlign = "center";
-    listaTitle.style.fontSize = "30px"
+    listaTitle.style.fontSize = "30px";
     listaSubtitle.style.textAlign = "center";
     listaSubtitle.style.fontSize = "20px";
     listaSubtitle.style.paddingBottom = "30px";
@@ -393,7 +394,7 @@ function newProfileFileWriter() {
     text = text.substring(0, text.length - 1);
     let blob = new Blob([text], { type: "text/plain" });
 
-    let a = document.createElement('a');
+    let a = document.createElement("a");
     a.setAttribute("download", filename);
     a.setAttribute("href", window.URL.createObjectURL(blob));
     a.click();
