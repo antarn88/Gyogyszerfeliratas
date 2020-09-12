@@ -7,6 +7,7 @@
     <title>Gyógyszerfelíratás</title>
     <link rel="icon" href="favicon.png">
     <link rel="stylesheet" href="css/bootstrap.min.css">
+    <link rel="stylesheet" href="css/font.awesome.min.css">
     <link rel="stylesheet" href="css/style.css">
 </head>
 
@@ -18,7 +19,8 @@
         <input type="file" id="personal-profile-file" accept=".txt">
     </div>
     <div id="create-profile">
-        <button id="create-profile-button" class="btn btn-primary">Új profil</button>
+        <button id="create-profile-button" class="btn btn-primary"><i class="fas fa-user-plus"></i>Új profil
+            létrehozása</button>
     </div>
     <div id="create-profile-modal">
         <div id="create-profile-modal-content">
@@ -28,19 +30,19 @@
                 <div class="form-group row">
                     <label for="nev" class="col-sm-4 col-form-label new-profile-labels">Név:</label>
                     <div class="col-sm-8">
-                        <input type="text" class="form-control" id="nev" autofocus>
+                        <input type="text" class="form-control" id="nev" title="Például: Kiss István" autofocus>
                     </div>
                 </div>
                 <div class="form-group row">
                     <label for="szul-datum" class="col-sm-4 col-form-label new-profile-labels">Születési dátum:</label>
                     <div class="col-sm-8">
-                        <input type="text" class="form-control" id="szul-datum">
+                        <input type="text" class="form-control" id="szul-datum" title="Például: 1960. 01. 15.">
                     </div>
                 </div>
                 <div class="form-group row">
                     <label for="taj-szam" class="col-sm-4 col-form-label new-profile-labels">TAJ szám:</label>
                     <div class="col-sm-8">
-                        <input type="text" class="form-control" id="taj-szam">
+                        <input type="text" class="form-control" id="taj-szam" title="Például: 123 456 789">
                     </div>
                 </div>
                 <div id="szedett-gyogyszerek">
@@ -48,20 +50,23 @@
                     <div class="form-group row gyogyszer-row">
                         <div class="col-sm-5">
                             <input type="text" class="form-control" id="gyogyszer-name-short"
-                                placeholder="Gyógyszer neve">
+                                placeholder="Gyógyszer neve" title="Például: Algoflex">
                         </div>
                         <div class="col-sm-7">
                             <input type="text" class="form-control" id="gyogyszer-name-long"
-                                placeholder="Gyógyszer neve hosszan">
+                                placeholder="Gyógyszer neve hosszan"
+                                title="Például: Algoflex Ultra Forte 600 mg filmtabletta">
                         </div>
                     </div>
                 </div>
                 <div class="form-group row new-profile-buttons">
                     <div class="col-sm-7">
-                        <button class="btn btn-primary" onclick="gyogyszerPlus()">További gyógyszer hozzáadása</button>
+                        <button class="btn btn-secondary" onclick="gyogyszerPlus()"><i class="fas fa-plus"></i>További
+                            gyógyszer hozzáadása</button>
                     </div>
                     <div class="col-sm-5">
-                        <button class="btn btn-primary" onclick="createProfileAction()">Létrehoz</button>
+                        <button class="btn btn-primary" onclick="createProfileAction()"><i
+                                class="fas fa-check"></i>Létrehozás</button>
                     </div>
                 </div>
             </form>
@@ -76,7 +81,8 @@
         <h4 id="lista-subtitle"></h4>
     </div>
     <div id="print-section">
-        <button id="print-btn" class="btn btn-primary" onclick="PrintElem()">Nyomtatás</button>
+        <button id="print-btn" class="btn btn-primary" onclick="PrintElem()"><i
+                class="fas fa-print"></i>Nyomtatás</button>
     </div>
     <script src="js/main.js"></script>
 </body>

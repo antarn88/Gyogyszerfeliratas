@@ -8,7 +8,6 @@ let createProfileModal = document.querySelector("#create-profile-modal");
 let createProfileButton = document.querySelector("#create-profile-button");
 let closeButton = document.querySelectorAll(".close")[0];
 
-let headerLine = null;
 let szemelyNeve = null;
 let szemelySzuletesiDatum = null;
 let szemelyTajSzam = null;
@@ -43,7 +42,7 @@ profileSelector.ondragover = function (evt) {
 
 profileSelector.ondragleave = function () {
     dragging--;
-    if (dragging == 0) {
+    if (dragging === 0) {
         profileSelector.classList.remove("dragover");
     }
     profileSelector.style.background = "white";
@@ -55,7 +54,7 @@ profileSelector.ondrop = function (evt) {
     personalProfileFile.files = evt.dataTransfer.files;
     let droppedFile = personalProfileFile.files[0];
 
-    if (droppedFile.type == "text/plain") {
+    if (droppedFile.type === "text/plain" && String(droppedFile.name).endsWith(".txt")) {
         validProfileFile = true;
         const dT = new DataTransfer();
         dT.items.add(evt.dataTransfer.files[0]);
@@ -91,56 +90,69 @@ function hideNewProfileBtn() {
 
 function readProfileFile() {
     hideAlertText();
-    hideNewProfileBtn();
     let file = personalProfileFile.files[0];
-    let reader = new FileReader();
 
-    reader.onload = function () {
-        let rowCounter = 0;
-        let gyogyszerek = []
-        for (let i = 0; i < this.result.split("\n").length; i++) {
-            let line = String(this.result.split("\n")[i]).replace("\r", "").trim();
+    if (String(file.name).endsWith(".txt")) {
+        hideNewProfileBtn();
+        let reader = new FileReader();
 
-            if (line) {
-                rowCounter++;
-                if (rowCounter === 1) {
-                    // Check first line
-                    if ((line.match(/\|/g) || []).length === 2) {
-                        validProfileFile = true;
-                        szemelyNeve = line.split("|")[0];
-                        szemelySzuletesiDatum = line.split("|")[1];
-                        szemelyTajSzam = line.split("|")[2];
+        reader.onload = function () {
+            let rowCounter = 0;
+            let gyogyszerek = []
+            for (let i = 0; i < this.result.split("\n").length; i++) {
+                let line = String(this.result.split("\n")[i]).replace("\r", "").trim();
+
+                if (line) {
+                    rowCounter++;
+                    if (rowCounter === 1) {
+
+                        // Check first line
+                        if ((line.match(/\|/g) || []).length === 2) {
+                            validProfileFile = true;
+                            szemelyNeve = line.split("|")[0];
+                            szemelySzuletesiDatum = line.split("|")[1];
+                            szemelyTajSzam = line.split("|")[2];
+                        } else {
+                            setTimeout(function () {
+                                setAlertText("Érvénytelen profilfájl!");
+                            }, 50);
+                        }
                     } else {
-                        setTimeout(function () {
-                            setAlertText("Érvénytelen profilfájl!");
-                        }, 50);
-                    }
-                } else {
-                    // Check lines from second line
-                    if ((line.match(/\|/g) || []).length === 1 && validProfileFile) {
-                        gyogyszerek.push(line);
-                    } else {
-                        validProfileFile = false;
-                        setTimeout(function () {
-                            setAlertText("Érvénytelen profilfájl!");
-                        }, 50);
+
+                        // Check lines from second line
+                        if ((line.match(/\|/g) || []).length === 1 && validProfileFile) {
+                            gyogyszerek.push(line);
+                        } else {
+                            validProfileFile = false;
+                            setTimeout(function () {
+                                setAlertText("Érvénytelen profilfájl!");
+                            }, 50);
+                        }
                     }
                 }
             }
+
+            gyogyszerScanner(gyogyszerek);
+        };
+
+        if (file) {
+            reader.readAsText(file);
+            setTimeout(function () {
+                szuksegesGyogyszerekAction(gyogyszerObjects);
+            }, 100);
         }
-
-        gyogyszerScanner(gyogyszerek);
-    };
-
-    if (file) {
-        reader.readAsText(file);
+    } else {
+        validProfileFile = false;
         setTimeout(function () {
-            szuksegesGyogyszerekAction(gyogyszerObjects);
+            setAlertText("Érvénytelen profilfájl!");
         }, 50);
     }
 }
 
 function gyogyszerScanner(gyogyszerArray) {
+    let gyogyszerNameShort;
+    let gyogyszerNameLong;
+    let gyogyszerObject;
     for (let i = 0; i < gyogyszerArray.length; i++) {
         gyogyszerNameShort = gyogyszerArray[i].split("|")[0];
         gyogyszerNameLong = gyogyszerArray[i].split("|")[1];
@@ -168,7 +180,7 @@ function generateCheckbox(gyogyszerId, gyogyszerNameShort, gyogyszerNameLong) {
     label.innerHTML = gyogyszerNameShort;
     checkBox.setAttribute("type", "checkbox");
     checkBox.setAttribute("id", gyogyszerId);
-    checkBox.addEventListener("click", gyogyszerAction.bind(event, gyogyszerId, gyogyszerNameLong));
+    checkBox.addEventListener("click", gyogyszerAction.bind(null, gyogyszerId, gyogyszerNameLong));
     gyogyszerContainer.appendChild(label);
     gyogyszerContainer.appendChild(checkBox);
     gyogyszerContainer.appendChild(br);
@@ -196,7 +208,7 @@ function szuksegesGyogyszerekAction(gyogyszerobjects) {
 
 function gyogyszerAction(gyogyszerId, gyogyszerNameLong) {
     let checkBox = document.querySelector(`#${gyogyszerId}`);
-    if (checkBox.checked == true) {
+    if (checkBox.checked === true) {
         showGyogyszer(gyogyszerId, gyogyszerNameLong)
         selectedItems++;
         hideUnnecessaryItems();
@@ -228,7 +240,7 @@ function PrintElem() {
     let elem = document.querySelector("#gyogyszerlistaContainer");
     let mywindow = window.open('', 'PRINT', 'height=600,width=1000');
 
-    mywindow.document.write('<html><head><title>' + document.title + '</title>');
+    mywindow.document.write('<html lang="hu"><head><title>' + document.title + '</title>');
     mywindow.document.write('</head><body>');
 
     mywindow.document.write('<div id="gyogyszerlistaContainer">');
@@ -268,7 +280,7 @@ function PrintElem() {
 }
 
 function hideUnnecessaryItems() {
-    if (selectedItems != 0) {
+    if (selectedItems !== 0) {
         gyogyszerlista.style.display = "block";
         printsection.style.display = "block";
     } else {
@@ -294,6 +306,7 @@ function gyogyszerPlus() {
     gyogyszerNameShortInput.setAttribute("class", "form-control");
     gyogyszerNameShortInput.setAttribute("id", `gyogyszer-name-short_${newGyogyszerCount}`);
     gyogyszerNameShortInput.setAttribute("placeholder", "Gyógyszer neve");
+    gyogyszerNameShortInput.setAttribute("title", "Például: Algoflex");
     gyogyszerNameShortDiv.appendChild(gyogyszerNameShortInput);
 
     gyogyszerNameLongDiv.setAttribute("class", "col-sm-7");
@@ -301,6 +314,7 @@ function gyogyszerPlus() {
     gyogyszerNameLongInput.setAttribute("class", "form-control");
     gyogyszerNameLongInput.setAttribute("id", `gyogyszer-name-long_${newGyogyszerCount}`);
     gyogyszerNameLongInput.setAttribute("placeholder", "Gyógyszer neve hosszan");
+    gyogyszerNameLongInput.setAttribute("title", "Például: Algoflex Ultra Forte 600 mg filmtabletta");
     gyogyszerNameLongDiv.appendChild(gyogyszerNameLongInput);
 
     row.appendChild(gyogyszerNameShortDiv);
@@ -313,34 +327,45 @@ function createProfileAction() {
     let szulDatum = document.querySelector("#szul-datum");
     let tajSzam = document.querySelector("#taj-szam");
     let szedettGyogyszerek = document.querySelectorAll("#szedett-gyogyszerek .gyogyszer-row");
+    let isEmptyAnyGyogyszerField = false;
 
-    newProfile.nev = nev.value;
-    newProfile.szulDatum = szulDatum.value;
-    newProfile.tajSzam = tajSzam.value;
-    newProfile.szedettGyogyszerek = [];
+    if (!(isEmptyField(nev) || isEmptyField(szulDatum) || isEmptyField(tajSzam))) {
+        newProfile.nev = nev.value;
+        newProfile.szulDatum = szulDatum.value;
+        newProfile.tajSzam = tajSzam.value;
+        newProfile.szedettGyogyszerek = [];
 
-    for (let i = 0; i < szedettGyogyszerek.length; i++) {
-        let gyogyszerNameShort = szedettGyogyszerek[i].querySelector("[id^='gyogyszer-name-short']");
-        let gyogyszerNameLong = szedettGyogyszerek[i].querySelector("[id^='gyogyszer-name-long']");
+        for (let i = 0; i < szedettGyogyszerek.length; i++) {
+            let gyogyszerNameShort = szedettGyogyszerek[i].querySelector("[id^='gyogyszer-name-short']");
+            let gyogyszerNameLong = szedettGyogyszerek[i].querySelector("[id^='gyogyszer-name-long']");
 
-        newProfile.szedettGyogyszerek.push({
-            gyogyszerNameShort: gyogyszerNameShort.value,
-            gyogyszerNameLong: gyogyszerNameLong.value
-        });
+            if (!(isEmptyField(gyogyszerNameShort) || isEmptyField(gyogyszerNameLong))) {
+                newProfile.szedettGyogyszerek.push({
+                    gyogyszerNameShort: gyogyszerNameShort.value,
+                    gyogyszerNameLong: gyogyszerNameLong.value
+                });
+            } else {
+                isEmptyAnyGyogyszerField = true;
+                break;
+            }
+        }
+
+        if (!isEmptyAnyGyogyszerField) {
+
+            // Print file format output
+            newProfileFileContent.push(nev.value + "|" + szulDatum.value + "|" + tajSzam.value);
+
+            for (let i = 0; i < newProfile.szedettGyogyszerek.length; i++) {
+
+                newProfileFileContent.push(newProfile.szedettGyogyszerek[i].gyogyszerNameShort + "|"
+                    + newProfile.szedettGyogyszerek[i].gyogyszerNameLong);
+            }
+
+            createProfileModal.style.display = "none";
+            newProfileFileWriter();
+            clearNewProfileForm();
+        }
     }
-
-    // Print file format output
-    newProfileFileContent.push(nev.value + "|" + szulDatum.value + "|" + tajSzam.value);
-
-    for (let i = 0; i < newProfile.szedettGyogyszerek.length; i++) {
-
-        newProfileFileContent.push(newProfile.szedettGyogyszerek[i].gyogyszerNameShort + "|"
-            + newProfile.szedettGyogyszerek[i].gyogyszerNameLong);
-    }
-
-    createProfileModal.style.display = "none";
-    newProfileFileWriter();
-    clearNewProfileForm();
 }
 
 function clearNewProfileForm() {
@@ -349,7 +374,7 @@ function clearNewProfileForm() {
     // Restore one line medicine row
     let rows = document.querySelectorAll(".gyogyszer-row");
     for (let i = 0; i < rows.length; i++) {
-        if (i != 0) {
+        if (i !== 0) {
             rows[i].parentNode.removeChild(rows[i]);
         }
     }
@@ -373,4 +398,13 @@ function newProfileFileWriter() {
     a.setAttribute("href", window.URL.createObjectURL(blob));
     a.click();
     titleAction();
+}
+
+function isEmptyField(element) {
+    if (element.value === "") {
+        alert("Ne hagyd üresen egyik mezőt sem!");
+        element.focus();
+        return true;
+    }
+    return false;
 }
