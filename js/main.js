@@ -24,12 +24,14 @@ personalProfileFile.addEventListener("change", readProfileFile);
 
 // Create profile modal stuffs
 createProfileButton.onclick = function () {
+    document.body.style.overflowY = "unset";
     createProfileModal.style.display = "block";
     document.querySelector("#nev").focus();
 }
 
 closeButton.onclick = function () {
     createProfileModal.style.display = "none";
+    document.body.style.overflowY = "scroll";
 }
 
 profileSelector.ondragover = function (evt) {
