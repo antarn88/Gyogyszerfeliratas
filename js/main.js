@@ -414,7 +414,9 @@ function newProfileFileWriter() {
   }
 
   text = text.substring(0, text.length - 1);
-  let blob = new Blob([text], { type: 'text/plain' });
+  let blob = new Blob([text], {
+    type: 'text/plain',
+  });
 
   let a = document.createElement('a');
   a.setAttribute('download', filename);
