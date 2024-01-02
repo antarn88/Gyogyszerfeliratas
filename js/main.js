@@ -102,6 +102,7 @@ const setRadioButtonsEvents = () => {
     printType.addEventListener('change', (event) => {
       if (event.target) {
         printType = event.target.value;
+        window.printType = event.target.value;
         setPreviewPrintListHeader(printType);
       }
     });
@@ -189,15 +190,15 @@ function gyogyszerScanner(gyogyszerArray) {
 function setPreviewPrintListHeader(printType = 'feliratas') {
   let listaTitle = document.querySelector('#lista-title');
   let listaSubTitle = document.querySelector('#lista-subtitle');
-  listaTitle.innerHTML = `${szemelyNeve} - ${
-    printType === 'feliratas' ? 'Felírandó gyógyszer(ek):' : 'GYÓGYSZERTÁRBÓL KI KELL VÁLTANI:'
-  } `;
+  listaTitle.innerHTML = `${szemelyNeve} - ${printType === 'feliratas' ? 'Felírandó gyógyszer(ek):' : 'GYÓGYSZERTÁRBÓL KI KELL VÁLTANI:'
+    } `;
   listaSubTitle.innerHTML = `(Szül.: ${szemelySzuletesiDatum} - TAJ: ${szemelyTajSzam})`;
 }
 
 function generateCheckbox(gyogyszerId, gyogyszerNameShort, gyogyszerNameLong) {
   let label = document.createElement('label');
   let checkBox = document.createElement('input');
+  let piece = document.createElement('input');
   let br = document.createElement('br');
 
   label.setAttribute('for', gyogyszerId);
@@ -205,8 +206,19 @@ function generateCheckbox(gyogyszerId, gyogyszerNameShort, gyogyszerNameLong) {
   checkBox.setAttribute('type', 'checkbox');
   checkBox.setAttribute('id', gyogyszerId);
   checkBox.addEventListener('click', gyogyszerAction.bind(null, gyogyszerId, gyogyszerNameLong));
+
+  piece.setAttribute('type', 'number');
+  piece.setAttribute('id', `${gyogyszerId}-piece`);
+  piece.style.width = '50px';
+  piece.style.marginLeft = '20px';
+  piece.value = 1;
+
+
   gyogyszerContainer.appendChild(label);
   gyogyszerContainer.appendChild(checkBox);
+
+  gyogyszerContainer.appendChild(piece);
+
   gyogyszerContainer.appendChild(br);
   gyogyszerContainer.appendChild(br);
 }
@@ -246,10 +258,19 @@ function gyogyszerAction(gyogyszerId, gyogyszerNameLong) {
 function showGyogyszer(gyogyszerId, gyogyszerNameLong) {
   let gyogyszerlistaContainer = document.querySelector('#gyogyszerlistaContainer');
   let par = document.createElement('p');
+  let piece = document.querySelector(`#${gyogyszerId}-piece`)?.value;
+
   par.setAttribute('id', `${gyogyszerId}-list-item`);
   par.setAttribute('class', 'list-item');
   par.setAttribute('style', 'display:block');
-  par.innerHTML = '<li>' + gyogyszerNameLong + '</li>';
+  par.setAttribute('piece', piece);
+
+  if (window.printType === 'kivaltas') {
+    par.innerHTML = '<li>' + gyogyszerNameLong + ' - ' + piece + ' doboz' + '</li>';
+  } else {
+    par.innerHTML = '<li>' + gyogyszerNameLong + '</li>';
+  }
+
   gyogyszerlistaContainer.appendChild(par);
 }
 
