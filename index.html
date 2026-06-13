@@ -5,107 +5,142 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Gyógyszerfelíratás</title>
     <link rel="icon" href="favicon.png" />
-    <link rel="stylesheet" href="css/bootstrap.min.css" />
-    <link rel="stylesheet" href="css/font.awesome.min.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
     <link rel="stylesheet" href="css/style.css" />
   </head>
 
   <body>
-    <h1 id="title"><a href="javascript:titleAction();">Gyógyszerfelíratás</a></h1>
-    <div id="profile-selector">
-      <p>Válaszd ki a személyes profilt!</p>
-      <p>Kattints a Fájl kiválasztása/Tallózás gombra, vagy húzd ide a fájlt!</p>
-      <input type="file" id="personal-profile-file" accept=".txt" />
-    </div>
-    <div id="create-profile">
-      <button id="create-profile-button" class="btn btn-primary"><i class="fas fa-user-plus"></i>Új profil létrehozása</button>
-    </div>
-    <div id="create-profile-modal">
-      <div id="create-profile-modal-content">
-        <span class="close">&times;</span>
-        <p id="new-profile-main-title">Új profil létrehozása</p>
-        <form action="javascript:void(0);" id="new-profile-form">
-          <div class="form-group row">
-            <label for="nev" class="col-sm-4 col-form-label new-profile-labels">Név:</label>
-            <div class="col-sm-8">
-              <input type="text" class="form-control" id="nev" title="Például: Kiss István" autofocus />
+    <!-- Header -->
+    <header class="app-header">
+      <h1 class="app-title">
+        <a href="#" id="title-link">
+          <i data-lucide="pill" class="icon"></i>
+          Gyógyszerfelíratás
+        </a>
+      </h1>
+    </header>
+
+    <main class="app-main">
+      <!-- Alert -->
+      <div id="alert-div" class="alert" role="alert" aria-live="polite"></div>
+
+      <!-- Profile Selector / Upload Area -->
+      <section id="profile-selector" class="card upload-area">
+        <div class="upload-content">
+          <i data-lucide="upload-cloud" class="upload-icon"></i>
+          <p class="upload-title">Válaszd ki a személyes profilt!</p>
+          <p class="upload-subtitle">Kattints a Tallózás gombra, vagy húzd ide a fájlt!</p>
+          <label for="personal-profile-file" class="btn btn-outline upload-btn">
+            <i data-lucide="file-text" class="icon-sm"></i>
+            Tallózás
+          </label>
+          <input type="file" id="personal-profile-file" accept=".txt" hidden />
+        </div>
+      </section>
+
+      <!-- Create Profile Button -->
+      <div id="create-profile">
+        <button id="create-profile-button" class="btn btn-primary">
+          <i data-lucide="user-plus" class="icon-sm"></i>
+          Új profil létrehozása
+        </button>
+      </div>
+
+      <!-- Print Type Toggle -->
+      <section id="print-type-section" class="card print-type-card" hidden>
+        <div class="toggle-group">
+          <label class="toggle-option active" data-value="feliratas">
+            <input type="radio" name="printType" value="feliratas" checked hidden />
+            <i data-lucide="file-plus" class="icon-sm"></i>
+            Felíratás
+          </label>
+          <label class="toggle-option" data-value="kivaltas">
+            <input type="radio" name="printType" value="kivaltas" hidden />
+            <i data-lucide="package-check" class="icon-sm"></i>
+            Kiváltás
+          </label>
+        </div>
+      </section>
+
+      <!-- Medicine Selection -->
+      <section id="gyogyszer-container" class="card medicine-card" hidden>
+        <h2 class="card-title">
+          <i data-lucide="clipboard-list" class="icon-sm"></i>
+          Szükséges gyógyszer(ek):
+        </h2>
+        <div id="medicine-list" class="medicine-list"></div>
+      </section>
+
+      <!-- Print Preview / List -->
+      <section id="gyogyszerlistaContainer" class="card print-preview-card" hidden>
+        <h2 id="lista-title" class="preview-title"></h2>
+        <h4 id="lista-subtitle" class="preview-subtitle"></h4>
+        <div id="preview-items"></div>
+      </section>
+
+      <!-- Print Button -->
+      <div id="print-section" class="print-actions" hidden>
+        <button id="print-btn" class="btn btn-primary" onclick="app.printList()">
+          <i data-lucide="printer" class="icon-sm"></i>
+          Nyomtatás
+        </button>
+      </div>
+    </main>
+
+    <!-- Create Profile Modal (using native dialog) -->
+    <dialog id="create-profile-modal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title">
+            <i data-lucide="user-plus" class="icon-sm"></i>
+            Új profil létrehozása
+          </h2>
+          <button class="modal-close" id="close-modal-btn" aria-label="Bezárás">
+            <i data-lucide="x"></i>
+          </button>
+        </div>
+
+        <form id="new-profile-form" class="modal-form">
+          <div class="form-group">
+            <label for="nev" class="form-label">Név</label>
+            <input type="text" id="nev" class="form-input" placeholder="Például: Kiss István" autofocus />
+          </div>
+
+          <div class="form-group">
+            <label for="szul-datum" class="form-label">Születési dátum</label>
+            <input type="text" id="szul-datum" class="form-input" placeholder="Például: 1960. 01. 15." />
+          </div>
+
+          <div class="form-group">
+            <label for="taj-szam" class="form-label">TAJ szám</label>
+            <input type="text" id="taj-szam" class="form-input" placeholder="Például: 123 456 789" />
+          </div>
+
+          <div id="szedett-gyogyszerek" class="medicine-form-section">
+            <p class="form-label">Szedett gyógyszer(ek):</p>
+            <div class="gyogyszer-row">
+              <input type="text" class="form-input" id="gyogyszer-name-short" placeholder="Rövid név" title="Például: Algoflex" />
+              <input type="text" class="form-input" id="gyogyszer-name-long" placeholder="Teljes név" title="Például: Algoflex Ultra Forte 600 mg filmtabletta" />
             </div>
           </div>
-          <div class="form-group row">
-            <label for="szul-datum" class="col-sm-4 col-form-label new-profile-labels">Születési dátum:</label>
-            <div class="col-sm-8">
-              <input type="text" class="form-control" id="szul-datum" title="Például: 1960. 01. 15." />
-            </div>
-          </div>
-          <div class="form-group row">
-            <label for="taj-szam" class="col-sm-4 col-form-label new-profile-labels">TAJ szám:</label>
-            <div class="col-sm-8">
-              <input type="text" class="form-control" id="taj-szam" title="Például: 123 456 789" />
-            </div>
-          </div>
-          <div id="szedett-gyogyszerek">
-            <p class="new-profile-labels">Szedett gyógyszer(ek):</p>
-            <div class="form-group row gyogyszer-row">
-              <div class="col-sm-5">
-                <input
-                  type="text"
-                  class="form-control"
-                  id="gyogyszer-name-short"
-                  placeholder="Gyógyszer neve"
-                  title="Például: Algoflex"
-                />
-              </div>
-              <div class="col-sm-7">
-                <input
-                  type="text"
-                  class="form-control"
-                  id="gyogyszer-name-long"
-                  placeholder="Gyógyszer neve hosszan"
-                  title="Például: Algoflex Ultra Forte 600 mg filmtabletta"
-                />
-              </div>
-            </div>
-          </div>
-          <div class="form-group row new-profile-buttons">
-            <div class="col-sm-7">
-              <button class="btn btn-secondary" onclick="gyogyszerPlus()">
-                <i class="fas fa-plus"></i>További gyógyszer hozzáadása
-              </button>
-            </div>
-            <div class="col-sm-5">
-              <button class="btn btn-primary" onclick="createProfileAction()"><i class="fas fa-check"></i>Létrehozás</button>
-            </div>
+
+          <div class="modal-actions">
+            <button type="button" class="btn btn-secondary" id="add-medicine-btn">
+              <i data-lucide="plus" class="icon-sm"></i>
+              További gyógyszer
+            </button>
+            <button type="submit" class="btn btn-primary">
+              <i data-lucide="check" class="icon-sm"></i>
+              Létrehozás
+            </button>
           </div>
         </form>
       </div>
-    </div>
-    <div id="alert-div" class="alert alert-danger"></div>
+    </dialog>
 
-    <div class="row" id="print-type-section">
-      <div class="col-6 offset-3">
-        <div class="d-flex justify-content-center">
-          <div class="form-check mr-3">
-            <input class="form-check-input" type="radio" name="printType" id="feliratas" value="feliratas" checked />
-            <label class="form-check-label radio-label" for="feliratas"> Felíratás </label>
-          </div>
-          <div class="form-check">
-            <input class="form-check-input" type="radio" name="printType" id="kivaltas" value="kivaltas" />
-            <label class="form-check-label radio-label" for="kivaltas"> Kiváltás </label>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div id="gyogyszer-container">
-      <p id="szukseges-gyogyszerek-label">Szükséges gyógyszer(ek):</p>
-    </div>
-    <div id="gyogyszerlistaContainer">
-      <h2 id="lista-title"></h2>
-      <h4 id="lista-subtitle"></h4>
-    </div>
-    <div id="print-section">
-      <button id="print-btn" class="btn btn-primary" onclick="PrintElem()"><i class="fas fa-print"></i>Nyomtatás</button>
-    </div>
     <script src="js/main.js"></script>
   </body>
 </html>

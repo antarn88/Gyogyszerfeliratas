@@ -1,456 +1,585 @@
-let gyogyszerlista = document.querySelector('#gyogyszerlistaContainer');
-let printsection = document.querySelector('#print-section');
-let personalProfileFile = document.querySelector('#personal-profile-file');
-let gyogyszerContainer = document.querySelector('#gyogyszer-container');
-let profileSelector = document.querySelector('#profile-selector');
-let alertDiv = document.querySelector('#alert-div');
-let createProfileModal = document.querySelector('#create-profile-modal');
-let createProfileButton = document.querySelector('#create-profile-button');
-let closeButton = document.querySelectorAll('.close')[0];
-let printTypeSection = document.getElementById('print-type-section');
+/**
+ * Gyógyszerfelíratás - Modern Refactored Application
+ * ES6+ Class-based architecture
+ */
+class GyogyszerfeliratasApp {
+  constructor() {
+    // State
+    this.szemelyNeve = null;
+    this.szemelySzuletesiDatum = null;
+    this.szemelyTajSzam = null;
+    this.gyogyszerObjects = [];
+    this.selectedItems = 0;
+    this.dragging = 0;
+    this.newGyogyszerCount = 1;
+    this.validProfileFile = false;
+    this.newProfile = {};
+    this.newProfileFileContent = [];
+    this.printType = 'feliratas';
 
-let szemelyNeve = null;
-let szemelySzuletesiDatum = null;
-let szemelyTajSzam = null;
-let gyogyszerId = null;
-let gyogyszerObjects = [];
-let selectedItems = 0;
-let dragging = 0;
-let newGyogyszerCount = 1;
-let validProfileFile = false;
-let newProfile = {};
-let newProfileFileContent = [];
-let printType = 'feliratas';
+    // DOM References
+    this.elements = {
+      gyogyszerlistaContainer: document.getElementById('gyogyszerlistaContainer'),
+      previewItems: document.getElementById('preview-items'),
+      printSection: document.getElementById('print-section'),
+      personalProfileFile: document.getElementById('personal-profile-file'),
+      gyogyszerContainer: document.getElementById('gyogyszer-container'),
+      medicineList: document.getElementById('medicine-list'),
+      profileSelector: document.getElementById('profile-selector'),
+      alertDiv: document.getElementById('alert-div'),
+      createProfileModal: document.getElementById('create-profile-modal'),
+      createProfileButton: document.getElementById('create-profile-button'),
+      closeModalBtn: document.getElementById('close-modal-btn'),
+      printTypeSection: document.getElementById('print-type-section'),
+      titleLink: document.getElementById('title-link'),
+      listaTitle: document.getElementById('lista-title'),
+      listaSubtitle: document.getElementById('lista-subtitle'),
+      addMedicineBtn: document.getElementById('add-medicine-btn'),
+      newProfileForm: document.getElementById('new-profile-form'),
+      szedettGyogyszerek: document.getElementById('szedett-gyogyszerek'),
+    };
 
-personalProfileFile.addEventListener('change', readProfileFile);
-
-// Create profile modal stuffs
-createProfileButton.onclick = function () {
-  document.body.style.overflowY = 'unset';
-  createProfileModal.style.display = 'block';
-  document.querySelector('#nev').focus();
-};
-
-closeButton.onclick = function () {
-  createProfileModal.style.display = 'none';
-  document.body.style.overflowY = 'scroll';
-};
-
-profileSelector.ondragover = function (evt) {
-  dragging++;
-  profileSelector.classList.add('dragover');
-  profileSelector.style.background = 'yellow';
-  profileSelector.style.border = '1px dashed black';
-  evt.preventDefault();
-};
-
-profileSelector.ondragleave = function () {
-  dragging--;
-  if (dragging === 0) {
-    profileSelector.classList.remove('dragover');
+    this.init();
   }
-  profileSelector.style.background = 'white';
-  profileSelector.style.border = '1px dotted black';
-};
 
-profileSelector.ondrop = function (evt) {
-  profileSelector.classList.remove('dragover');
-  personalProfileFile.files = evt.dataTransfer.files;
-  let droppedFile = personalProfileFile.files[0];
-
-  if (droppedFile.type === 'text/plain' && String(droppedFile.name).endsWith('.txt')) {
-    validProfileFile = true;
-    const dT = new DataTransfer();
-    dT.items.add(evt.dataTransfer.files[0]);
-    personalProfileFile.files = dT.files;
-
-    readProfileFile();
-    evt.preventDefault();
-  } else {
-    setAlertText('Érvénytelen profilfájl!');
-    profileSelector.style.background = 'white';
-    profileSelector.style.border = '1px dotted black';
-    evt.preventDefault();
+  init() {
+    this.bindEvents();
+    this.initLucideIcons();
   }
-};
 
-if (printTypeSection) {
-  printTypeSection.style.display = 'none';
-}
+  initLucideIcons() {
+    if (typeof lucide !== 'undefined') {
+      lucide.createIcons();
+    }
+  }
 
-function titleAction() {
-  personalProfileFile.value = '';
-  location.reload();
-}
+  // ===== Event Binding =====
+  bindEvents() {
+    // File input change
+    this.elements.personalProfileFile.addEventListener('change', () => this.readProfileFile());
 
-function setAlertText(text) {
-  alertDiv.innerHTML = text;
-  alertDiv.style.display = 'block';
-}
+    // Title link - reload
+    this.elements.titleLink.addEventListener('click', (e) => {
+      e.preventDefault();
+      this.titleAction();
+    });
 
-function hideAlertText() {
-  alertDiv.style.display = 'none';
-}
-
-function hideNewProfileBtn() {
-  createProfileButton.style.display = 'none';
-}
-
-const setRadioButtonsEvents = () => {
-  const printTypes = document.querySelectorAll('input[name="printType"]');
-  printTypes.forEach((printType) => {
-    printType.addEventListener('change', (event) => {
-      if (event.target) {
-        printType = event.target.value;
-        window.printType = event.target.value;
-        setPreviewPrintListHeader(printType);
+    // Create profile modal
+    this.elements.createProfileButton.addEventListener('click', () => this.openModal());
+    this.elements.closeModalBtn.addEventListener('click', () => this.closeModal());
+    this.elements.createProfileModal.addEventListener('click', (e) => {
+      if (e.target === this.elements.createProfileModal) {
+        this.closeModal();
       }
     });
-  });
-};
 
-function readProfileFile() {
-  hideAlertText();
-  let file = personalProfileFile.files[0];
+    // Escape key closes modal
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && this.elements.createProfileModal.open) {
+        this.closeModal();
+      }
+    });
 
-  if (String(file.name).endsWith('.txt')) {
-    let reader = new FileReader();
+    // Drag & drop
+    this.elements.profileSelector.addEventListener('dragover', (e) => this.onDragOver(e));
+    this.elements.profileSelector.addEventListener('dragleave', () => this.onDragLeave());
+    this.elements.profileSelector.addEventListener('drop', (e) => this.onDrop(e));
 
-    reader.onload = function () {
-      let rowCounter = 0;
-      let gyogyszerek = [];
-      for (let i = 0; i < this.result.split('\n').length; i++) {
-        let line = String(this.result.split('\n')[i]).replace('\r', '').trim();
+    // Click on upload area triggers file input
+    this.elements.profileSelector.addEventListener('click', (e) => {
+      if (e.target.tagName !== 'LABEL' && e.target.tagName !== 'INPUT') {
+        this.elements.personalProfileFile.click();
+      }
+    });
 
-        if (line) {
-          rowCounter++;
-          if (rowCounter === 1) {
-            // Check first line
-            if ((line.match(/\|/g) || []).length === 2) {
-              validProfileFile = true;
-              szemelyNeve = line.split('|')[0];
-              szemelySzuletesiDatum = line.split('|')[1];
-              szemelyTajSzam = line.split('|')[2];
-            } else {
-              setTimeout(function () {
-                setAlertText('Érvénytelen profilfájl!');
-              }, 50);
-            }
+    // Radio buttons for print type
+    this.bindRadioButtons();
+
+    // Add medicine button in modal
+    this.elements.addMedicineBtn.addEventListener('click', () => this.addMedicineRow());
+
+    // Profile form submit
+    this.elements.newProfileForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      this.createProfileAction();
+    });
+  }
+
+  bindRadioButtons() {
+    const toggleOptions = document.querySelectorAll('.toggle-option');
+    toggleOptions.forEach((option) => {
+      option.addEventListener('click', () => {
+        // Remove active from all
+        toggleOptions.forEach((opt) => opt.classList.remove('active'));
+        // Add active to clicked
+        option.classList.add('active');
+        // Update hidden radio
+        const radio = option.querySelector('input[type="radio"]');
+        radio.checked = true;
+        // Update print type
+        this.printType = option.dataset.value;
+        this.setPreviewPrintListHeader();
+        // Re-render preview items with new type
+        this.refreshPreviewItems();
+      });
+    });
+  }
+
+  // ===== Drag & Drop =====
+  onDragOver(e) {
+    this.dragging++;
+    this.elements.profileSelector.classList.add('dragover');
+    e.preventDefault();
+  }
+
+  onDragLeave() {
+    this.dragging--;
+    if (this.dragging === 0) {
+      this.elements.profileSelector.classList.remove('dragover');
+    }
+  }
+
+  onDrop(e) {
+    e.preventDefault();
+    this.dragging = 0;
+    this.elements.profileSelector.classList.remove('dragover');
+
+    const files = e.dataTransfer.files;
+    if (files.length === 0) return;
+
+    const droppedFile = files[0];
+    if (droppedFile.type === 'text/plain' || droppedFile.name.endsWith('.txt')) {
+      const dT = new DataTransfer();
+      dT.items.add(files[0]);
+      this.elements.personalProfileFile.files = dT.files;
+      this.readProfileFile();
+    } else {
+      this.setAlertText('Érvénytelen profilfájl!');
+    }
+  }
+
+  // ===== Navigation =====
+  titleAction() {
+    this.elements.personalProfileFile.value = '';
+    location.reload();
+  }
+
+  // ===== Alerts =====
+  setAlertText(text) {
+    const alert = this.elements.alertDiv;
+    alert.textContent = text;
+    alert.className = 'alert alert-danger show';
+  }
+
+  hideAlertText() {
+    this.elements.alertDiv.className = 'alert';
+  }
+
+  // ===== Modal =====
+  openModal() {
+    this.elements.createProfileModal.showModal();
+    document.body.style.overflow = 'hidden';
+    setTimeout(() => {
+      document.getElementById('nev').focus();
+    }, 100);
+  }
+
+  closeModal() {
+    this.elements.createProfileModal.close();
+    document.body.style.overflow = '';
+    this.clearNewProfileForm();
+  }
+
+  // ===== Profile File Reading =====
+  readProfileFile() {
+    this.hideAlertText();
+    const file = this.elements.personalProfileFile.files[0];
+
+    if (!file) return;
+
+    if (!file.name.endsWith('.txt')) {
+      this.validProfileFile = false;
+      setTimeout(() => this.setAlertText('Érvénytelen profilfájl!'), 50);
+      return;
+    }
+
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      const rowCounter = 0;
+      const gyogyszerek = [];
+      const lines = reader.result.split('\n');
+
+      let currentRowCounter = 0;
+      let currentValid = true;
+
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].replace('\r', '').trim();
+
+        if (!line) continue;
+
+        currentRowCounter++;
+
+        if (currentRowCounter === 1) {
+          // First line: Name|BirthDate|TAJ
+          if ((line.match(/\|/g) || []).length === 2) {
+            currentValid = true;
+            const parts = line.split('|');
+            this.szemelyNeve = parts[0];
+            this.szemelySzuletesiDatum = parts[1];
+            this.szemelyTajSzam = parts[2];
           } else {
-            // Check lines from second line
-            if ((line.match(/\|/g) || []).length === 1 && validProfileFile) {
-              gyogyszerek.push(line);
-            } else {
-              validProfileFile = false;
-              setTimeout(function () {
-                setAlertText('Érvénytelen profilfájl!');
-              }, 50);
-            }
+            currentValid = false;
+            setTimeout(() => this.setAlertText('Érvénytelen profilfájl!'), 50);
+            break;
+          }
+        } else {
+          // Medicine lines: ShortName|LongName
+          if ((line.match(/\|/g) || []).length === 1 && currentValid) {
+            gyogyszerek.push(line);
+          } else {
+            currentValid = false;
+            setTimeout(() => this.setAlertText('Érvénytelen profilfájl!'), 50);
+            break;
           }
         }
       }
 
-      if (validProfileFile) hideNewProfileBtn();
-      gyogyszerScanner(gyogyszerek);
+      this.validProfileFile = currentValid;
+
+      if (this.validProfileFile) {
+        this.elements.createProfileButton.style.display = 'none';
+        this.gyogyszerScanner(gyogyszerek);
+        this.showMedicineSelection();
+      }
     };
 
-    if (file) {
-      reader.readAsText(file);
-      setTimeout(function () {
-        szuksegesGyogyszerekAction(gyogyszerObjects);
-      }, 100);
-    }
+    reader.readAsText(file);
 
-    setRadioButtonsEvents();
-    if (printTypeSection) {
-      printTypeSection.style.display = 'block';
-    }
-  } else {
-    validProfileFile = false;
-    setTimeout(function () {
-      setAlertText('Érvénytelen profilfájl!');
-    }, 50);
+    // Show print type section
+    this.elements.printTypeSection.hidden = false;
   }
-}
 
-function gyogyszerScanner(gyogyszerArray) {
-  let gyogyszerNameShort;
-  let gyogyszerNameLong;
-  for (let i = 0; i < gyogyszerArray.length; i++) {
-    gyogyszerNameShort = gyogyszerArray[i].split('|')[0];
-    gyogyszerNameLong = gyogyszerArray[i].split('|')[1];
-    gyogyszerObjects.push({
-      gyogyszerId: `gyogyszer_${i}`,
-      gyogyszerNameShort: gyogyszerNameShort,
-      gyogyszerNameLong: gyogyszerNameLong,
+  // ===== Medicine Scanner =====
+  gyogyszerScanner(gyogyszerArray) {
+    this.gyogyszerObjects = [];
+    for (let i = 0; i < gyogyszerArray.length; i++) {
+      const parts = gyogyszerArray[i].split('|');
+      this.gyogyszerObjects.push({
+        gyogyszerId: `gyogyszer_${i}`,
+        gyogyszerNameShort: parts[0],
+        gyogyszerNameLong: parts[1],
+      });
+    }
+  }
+
+  // ===== Show Medicine Selection =====
+  showMedicineSelection() {
+    if (!this.validProfileFile) return;
+
+    // Hide profile selector, show medicine container
+    this.elements.profileSelector.hidden = true;
+    this.elements.gyogyszerContainer.hidden = false;
+
+    this.setPreviewPrintListHeader();
+
+    // Generate medicine checkboxes
+    const list = this.elements.medicineList;
+    list.innerHTML = '';
+
+    this.gyogyszerObjects.forEach((gyogyszer) => {
+      const item = this.createMedicineItem(gyogyszer);
+      list.appendChild(item);
+    });
+
+    this.initLucideIcons();
+  }
+
+  createMedicineItem(gyogyszer) {
+    const item = document.createElement('div');
+    item.className = 'medicine-item';
+    item.dataset.id = gyogyszer.gyogyszerId;
+
+    item.innerHTML = `
+      <input type="checkbox" class="medicine-checkbox" id="${gyogyszer.gyogyszerId}" />
+      <label class="medicine-label" for="${gyogyszer.gyogyszerId}">${gyogyszer.gyogyszerNameShort}</label>
+      <input type="number" class="medicine-qty" id="${gyogyszer.gyogyszerId}-piece" value="1" min="1" max="99" />
+      <span class="medicine-qty-label">db</span>
+    `;
+
+    // Bind checkbox event
+    const checkbox = item.querySelector('.medicine-checkbox');
+    checkbox.addEventListener('change', () => {
+      this.gyogyszerAction(gyogyszer.gyogyszerId, gyogyszer.gyogyszerNameLong, item);
+    });
+
+    // Bind quantity change to refresh preview
+    const qtyInput = item.querySelector('.medicine-qty');
+    qtyInput.addEventListener('change', () => {
+      if (checkbox.checked) {
+        this.refreshPreviewItems();
+      }
+    });
+
+    return item;
+  }
+
+  // ===== Medicine Action (Checkbox Toggle) =====
+  gyogyszerAction(gyogyszerId, gyogyszerNameLong, itemElement) {
+    const checkBox = document.getElementById(gyogyszerId);
+
+    if (checkBox.checked) {
+      itemElement.classList.add('selected');
+      this.selectedItems++;
+    } else {
+      itemElement.classList.remove('selected');
+      this.selectedItems--;
+    }
+
+    this.refreshPreviewItems();
+    this.togglePreviewVisibility();
+  }
+
+  // ===== Refresh Preview Items =====
+  refreshPreviewItems() {
+    const container = this.elements.previewItems;
+    container.innerHTML = '';
+
+    this.gyogyszerObjects.forEach((gyogyszer) => {
+      const checkbox = document.getElementById(gyogyszer.gyogyszerId);
+      if (checkbox && checkbox.checked) {
+        const piece = document.getElementById(`${gyogyszer.gyogyszerId}-piece`)?.value || 1;
+        const li = document.createElement('div');
+        li.className = 'preview-item';
+
+        if (this.printType === 'kivaltas') {
+          li.textContent = `${gyogyszer.gyogyszerNameLong} — ${piece} doboz`;
+        } else {
+          li.textContent = gyogyszer.gyogyszerNameLong;
+        }
+
+        container.appendChild(li);
+      }
     });
   }
-}
 
-function setPreviewPrintListHeader(printType = 'feliratas') {
-  let listaTitle = document.querySelector('#lista-title');
-  let listaSubTitle = document.querySelector('#lista-subtitle');
-  listaTitle.innerHTML = `${szemelyNeve} - ${printType === 'feliratas' ? 'Felírandó gyógyszer(ek):' : 'Gyógyszer(ek) kiváltásra:'
-    } `;
-  listaSubTitle.innerHTML = `(Szül.: ${szemelySzuletesiDatum} - TAJ: ${szemelyTajSzam})`;
-}
-
-function generateCheckbox(gyogyszerId, gyogyszerNameShort, gyogyszerNameLong) {
-  let label = document.createElement('label');
-  let checkBox = document.createElement('input');
-  let piece = document.createElement('input');
-  let br = document.createElement('br');
-
-  label.setAttribute('for', gyogyszerId);
-  label.innerHTML = gyogyszerNameShort;
-  checkBox.setAttribute('type', 'checkbox');
-  checkBox.setAttribute('id', gyogyszerId);
-  checkBox.addEventListener('click', gyogyszerAction.bind(null, gyogyszerId, gyogyszerNameLong));
-
-  piece.setAttribute('type', 'number');
-  piece.setAttribute('id', `${gyogyszerId}-piece`);
-  piece.style.width = '50px';
-  piece.style.marginLeft = '20px';
-  piece.value = 1;
-
-
-  gyogyszerContainer.appendChild(label);
-  gyogyszerContainer.appendChild(checkBox);
-
-  gyogyszerContainer.appendChild(piece);
-
-  gyogyszerContainer.appendChild(br);
-  gyogyszerContainer.appendChild(br);
-}
-
-function szuksegesGyogyszerekAction(gyogyszerobjects) {
-  if (validProfileFile) {
-    gyogyszerContainer.style.display = 'block';
-    setTimeout(function () {
-      document.querySelector('#profile-selector').style.display = 'none';
-      setPreviewPrintListHeader();
-      for (let i = 0; i < gyogyszerobjects.length; i++) {
-        let gyogyszerId = gyogyszerobjects[i].gyogyszerId;
-        let gyogyszerNameShort = gyogyszerobjects[i].gyogyszerNameShort;
-        let gyogyszerNameLong = gyogyszerobjects[i].gyogyszerNameLong;
-        generateCheckbox(gyogyszerId, gyogyszerNameShort, gyogyszerNameLong);
-      }
-    }, 50);
-  } else {
-    profileSelector.style.background = 'white';
-    profileSelector.style.border = '1px dotted black';
-  }
-}
-
-function gyogyszerAction(gyogyszerId, gyogyszerNameLong) {
-  let checkBox = document.querySelector(`#${gyogyszerId}`);
-  if (checkBox.checked === true) {
-    showGyogyszer(gyogyszerId, gyogyszerNameLong);
-    selectedItems++;
-    hideUnnecessaryItems();
-  } else {
-    hideGyogyszer(gyogyszerId);
-    selectedItems--;
-    hideUnnecessaryItems();
-  }
-}
-
-function showGyogyszer(gyogyszerId, gyogyszerNameLong) {
-  let gyogyszerlistaContainer = document.querySelector('#gyogyszerlistaContainer');
-  let par = document.createElement('p');
-  let piece = document.querySelector(`#${gyogyszerId}-piece`)?.value;
-
-  par.setAttribute('id', `${gyogyszerId}-list-item`);
-  par.setAttribute('class', 'list-item');
-  par.setAttribute('style', 'display:block');
-  par.setAttribute('piece', piece);
-
-  if (window.printType === 'kivaltas') {
-    par.innerHTML = '<li>' + gyogyszerNameLong + ' - ' + piece + ' doboz' + '</li>';
-  } else {
-    par.innerHTML = '<li>' + gyogyszerNameLong + '</li>';
+  // ===== Toggle Preview & Print Section Visibility =====
+  togglePreviewVisibility() {
+    const hasSelection = this.selectedItems > 0;
+    this.elements.gyogyszerlistaContainer.hidden = !hasSelection;
+    this.elements.printSection.hidden = !hasSelection;
   }
 
-  gyogyszerlistaContainer.appendChild(par);
-}
-
-function hideGyogyszer(gyogyszerId) {
-  let par = document.querySelector(`#${gyogyszerId}-list-item`);
-  let gyogyszerlistaContainer = document.querySelector('#gyogyszerlistaContainer');
-  par.style.display = 'none';
-  gyogyszerlistaContainer.removeChild(par);
-}
-
-function PrintElem() {
-  let elem = document.querySelector('#gyogyszerlistaContainer');
-  let mywindow = window.open('', 'PRINT', 'height=600,width=1000');
-
-  mywindow.document.write('<html lang="hu"><head><title>' + document.title + '</title>');
-  mywindow.document.write('</head><body>');
-
-  mywindow.document.write('<div id="gyogyszerlistaContainer">');
-  mywindow.document.write(elem.innerHTML);
-  mywindow.document.write('</div>');
-
-  let gyogyszerlistaContainer = mywindow.document.body.querySelector('#gyogyszerlistaContainer');
-  let listaTitle = gyogyszerlistaContainer.querySelector('#lista-title');
-  let listaSubtitle = gyogyszerlistaContainer.querySelector('#lista-subtitle');
-  let listaItems = gyogyszerlistaContainer.querySelectorAll('.list-item');
-
-  gyogyszerlistaContainer.style.marginTop = '0px';
-  gyogyszerlistaContainer.style.width = 'auto';
-  gyogyszerlistaContainer.style.height = 'auto';
-  gyogyszerlistaContainer.style.backgroundColor = 'white';
-  gyogyszerlistaContainer.style.margin = 'auto';
-  gyogyszerlistaContainer.style.borderBottom = '1px dotted black';
-  gyogyszerlistaContainer.style.padding = '30px';
-  listaTitle.style.textAlign = 'center';
-  listaTitle.style.fontSize = '30px';
-  listaSubtitle.style.textAlign = 'center';
-  listaSubtitle.style.fontSize = '20px';
-  listaSubtitle.style.paddingBottom = '30px';
-
-  for (let i = 0; i < listaItems.length; i++) {
-    listaItems[i].style.fontSize = '20px';
+  // ===== Print Preview Header =====
+  setPreviewPrintListHeader() {
+    const title = this.printType === 'feliratas' ? 'Felírandó gyógyszer(ek):' : 'Gyógyszer(ek) kiváltásra:';
+    this.elements.listaTitle.textContent = `${this.szemelyNeve} — ${title}`;
+    this.elements.listaSubtitle.textContent = `(Szül.: ${this.szemelySzuletesiDatum} — TAJ: ${this.szemelyTajSzam})`;
   }
 
-  mywindow.document.write('</body></html>');
-  mywindow.document.close();
+  // ===== Print =====
+  printList() {
+    const elem = this.elements.gyogyszerlistaContainer;
+    const printWindow = window.open('', 'PRINT', 'height=600,width=1000');
 
-  mywindow.focus();
-  mywindow.print();
-  mywindow.close();
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html lang="hu">
+      <head>
+        <title>${document.title} - Nyomtatás</title>
+        <style>
+          body {
+            font-family: 'Segoe UI', sans-serif;
+            margin: 0;
+            padding: 40px;
+          }
+          .preview-container {
+            max-width: 600px;
+            margin: 0 auto;
+            border-bottom: 1px dotted #000;
+            padding-bottom: 30px;
+          }
+          .preview-title {
+            text-align: center;
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 8px;
+          }
+          .preview-subtitle {
+            text-align: center;
+            font-size: 16px;
+            margin-bottom: 24px;
+            padding-bottom: 24px;
+            border-bottom: 1px dotted #ccc;
+          }
+          .preview-item {
+            font-size: 16px;
+            padding: 6px 0 6px 20px;
+            list-style: none;
+            position: relative;
+          }
+          .preview-item::before {
+            content: '';
+            display: inline-block;
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: #000;
+            margin-right: 12px;
+            vertical-align: middle;
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+          }
+        </style>
+      </head>
+      <body>
+        <div class="preview-container">
+          <div class="preview-title">${this.elements.listaTitle.textContent}</div>
+          <div class="preview-subtitle">${this.elements.listaSubtitle.textContent}</div>
+          ${this.elements.previewItems.innerHTML}
+        </div>
+      </body>
+      </html>
+    `);
 
-  return true;
-}
+    printWindow.document.close();
+    printWindow.focus();
 
-function hideUnnecessaryItems() {
-  if (selectedItems !== 0) {
-    gyogyszerlista.style.display = 'block';
-    printsection.style.display = 'block';
-  } else {
-    gyogyszerlista.style.display = 'none';
-    printsection.style.display = 'none';
+    // Wait for content to load then print
+    setTimeout(() => {
+      printWindow.print();
+      printWindow.close();
+    }, 250);
   }
-}
 
-function gyogyszerPlus() {
-  newGyogyszerCount++;
-  let szedettGyogyszerek = document.querySelector('#szedett-gyogyszerek');
-  let row = document.createElement('div');
-  let gyogyszerNameShortDiv = document.createElement('div');
-  let gyogyszerNameShortInput = document.createElement('input');
-  let gyogyszerNameLongDiv = document.createElement('div');
-  let gyogyszerNameLongInput = document.createElement('input');
+  // ===== Add Medicine Row (in modal) =====
+  addMedicineRow() {
+    this.newGyogyszerCount++;
+    const container = this.elements.szedettGyogyszerek;
 
-  row.setAttribute('class', 'form-group row gyogyszer-row');
-  szedettGyogyszerek.appendChild(row);
+    const row = document.createElement('div');
+    row.className = 'gyogyszer-row gyogyszer-row-with-remove';
+    row.innerHTML = `
+      <input type="text" class="form-input" id="gyogyszer-name-short_${this.newGyogyszerCount}" placeholder="Rövid név" title="Például: Algoflex" />
+      <input type="text" class="form-input" id="gyogyszer-name-long_${this.newGyogyszerCount}" placeholder="Teljes név" title="Például: Algoflex Ultra Forte 600 mg filmtabletta" />
+      <button type="button" class="remove-medicine-btn" title="Gyógyszer eltávolítása">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+      </button>
+    `;
 
-  gyogyszerNameShortDiv.setAttribute('class', 'col-sm-5');
-  gyogyszerNameShortInput.setAttribute('type', 'text');
-  gyogyszerNameShortInput.setAttribute('class', 'form-control');
-  gyogyszerNameShortInput.setAttribute('id', `gyogyszer-name-short_${newGyogyszerCount}`);
-  gyogyszerNameShortInput.setAttribute('placeholder', 'Gyógyszer neve');
-  gyogyszerNameShortInput.setAttribute('title', 'Például: Algoflex');
-  gyogyszerNameShortDiv.appendChild(gyogyszerNameShortInput);
+    container.appendChild(row);
 
-  gyogyszerNameLongDiv.setAttribute('class', 'col-sm-7');
-  gyogyszerNameLongInput.setAttribute('type', 'text');
-  gyogyszerNameLongInput.setAttribute('class', 'form-control');
-  gyogyszerNameLongInput.setAttribute('id', `gyogyszer-name-long_${newGyogyszerCount}`);
-  gyogyszerNameLongInput.setAttribute('placeholder', 'Gyógyszer neve hosszan');
-  gyogyszerNameLongInput.setAttribute('title', 'Például: Algoflex Ultra Forte 600 mg filmtabletta');
-  gyogyszerNameLongDiv.appendChild(gyogyszerNameLongInput);
+    // Bind remove button
+    const removeBtn = row.querySelector('.remove-medicine-btn');
+    removeBtn.addEventListener('click', () => {
+      row.remove();
+    });
 
-  row.appendChild(gyogyszerNameShortDiv);
-  row.appendChild(gyogyszerNameLongDiv);
-  gyogyszerNameShortInput.focus();
-}
+    // Focus first input
+    row.querySelector('input').focus();
+  }
 
-function createProfileAction() {
-  let nev = document.querySelector('#nev');
-  let szulDatum = document.querySelector('#szul-datum');
-  let tajSzam = document.querySelector('#taj-szam');
-  let szedettGyogyszerek = document.querySelectorAll('#szedett-gyogyszerek .gyogyszer-row');
-  let isEmptyAnyGyogyszerField = false;
+  // ===== Create Profile =====
+  createProfileAction() {
+    const nev = document.getElementById('nev');
+    const szulDatum = document.getElementById('szul-datum');
+    const tajSzam = document.getElementById('taj-szam');
+    const medicineRows = this.elements.szedettGyogyszerek.querySelectorAll('.gyogyszer-row');
 
-  if (!(isEmptyField(nev) || isEmptyField(szulDatum) || isEmptyField(tajSzam))) {
-    newProfile.nev = nev.value;
-    newProfile.szulDatum = szulDatum.value;
-    newProfile.tajSzam = tajSzam.value;
-    newProfile.szedettGyogyszerek = [];
+    // Validate main fields
+    if (this.isEmptyField(nev) || this.isEmptyField(szulDatum) || this.isEmptyField(tajSzam)) {
+      return;
+    }
 
-    for (let i = 0; i < szedettGyogyszerek.length; i++) {
-      let gyogyszerNameShort = szedettGyogyszerek[i].querySelector("[id^='gyogyszer-name-short']");
-      let gyogyszerNameLong = szedettGyogyszerek[i].querySelector("[id^='gyogyszer-name-long']");
+    this.newProfile = {
+      nev: nev.value,
+      szulDatum: szulDatum.value,
+      tajSzam: tajSzam.value,
+      szedettGyogyszerek: [],
+    };
 
-      if (!(isEmptyField(gyogyszerNameShort) || isEmptyField(gyogyszerNameLong))) {
-        newProfile.szedettGyogyszerek.push({
-          gyogyszerNameShort: gyogyszerNameShort.value,
-          gyogyszerNameLong: gyogyszerNameLong.value,
+    let hasEmptyMedicine = false;
+
+    for (const row of medicineRows) {
+      const nameShort = row.querySelector("[id^='gyogyszer-name-short']");
+      const nameLong = row.querySelector("[id^='gyogyszer-name-long']");
+
+      if (!this.isEmptyField(nameShort) && !this.isEmptyField(nameLong)) {
+        this.newProfile.szedettGyogyszerek.push({
+          gyogyszerNameShort: nameShort.value,
+          gyogyszerNameLong: nameLong.value,
         });
       } else {
-        isEmptyAnyGyogyszerField = true;
+        hasEmptyMedicine = true;
         break;
       }
     }
 
-    if (!isEmptyAnyGyogyszerField) {
-      // Print file format output
-      newProfileFileContent.push(nev.value + '|' + szulDatum.value + '|' + tajSzam.value);
+    if (hasEmptyMedicine) return;
 
-      for (let i = 0; i < newProfile.szedettGyogyszerek.length; i++) {
-        newProfileFileContent.push(
-          newProfile.szedettGyogyszerek[i].gyogyszerNameShort + '|' + newProfile.szedettGyogyszerek[i].gyogyszerNameLong
-        );
-      }
+    // Build file content
+    this.newProfileFileContent = [];
+    this.newProfileFileContent.push(`${nev.value}|${szulDatum.value}|${tajSzam.value}`);
 
-      createProfileModal.style.display = 'none';
-      newProfileFileWriter();
-      clearNewProfileForm();
+    this.newProfile.szedettGyogyszerek.forEach((gyogyszer) => {
+      this.newProfileFileContent.push(`${gyogyszer.gyogyszerNameShort}|${gyogyszer.gyogyszerNameLong}`);
+    });
+
+    this.closeModal();
+    this.downloadProfileFile();
+    this.clearNewProfileForm();
+  }
+
+  // ===== Download Profile File =====
+  downloadProfileFile() {
+    const text = this.newProfileFileContent.join('\n');
+    const blob = new Blob([text], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = this.newProfile.nev;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    this.titleAction();
+  }
+
+  // ===== Clear Form =====
+  clearNewProfileForm() {
+    this.elements.newProfileForm.reset();
+
+    // Remove extra medicine rows (keep the first one)
+    const rows = this.elements.szedettGyogyszerek.querySelectorAll('.gyogyszer-row');
+    rows.forEach((row, index) => {
+      if (index !== 0) row.remove();
+    });
+
+    // Remove with-remove class from first row
+    const firstRow = this.elements.szedettGyogyszerek.querySelector('.gyogyszer-row');
+    if (firstRow) {
+      firstRow.classList.remove('gyogyszer-row-with-remove');
     }
+
+    this.newGyogyszerCount = 1;
   }
-}
 
-function clearNewProfileForm() {
-  document.querySelector('#new-profile-form').reset();
-
-  // Restore one line medicine row
-  let rows = document.querySelectorAll('.gyogyszer-row');
-  for (let i = 0; i < rows.length; i++) {
-    if (i !== 0) {
-      rows[i].parentNode.removeChild(rows[i]);
+  // ===== Utility =====
+  isEmptyField(element) {
+    if (!element || element.value.trim() === '') {
+      alert('Ne hagyd üresen egyik mezőt sem!');
+      if (element) element.focus();
+      return true;
     }
+    return false;
   }
-  newGyogyszerCount = 1;
 }
 
-function newProfileFileWriter() {
-  let filename = newProfile.nev;
-  let text = '';
-
-  for (let i = 0; i < newProfileFileContent.length; i++) {
-    let line = newProfileFileContent[i];
-    text += line + '\n';
-  }
-
-  text = text.substring(0, text.length - 1);
-  let blob = new Blob([text], {
-    type: 'text/plain',
-  });
-
-  let a = document.createElement('a');
-  a.setAttribute('download', filename);
-  a.setAttribute('href', window.URL.createObjectURL(blob));
-  a.click();
-  titleAction();
-}
-
-function isEmptyField(element) {
-  if (element.value === '') {
-    alert('Ne hagyd üresen egyik mezőt sem!');
-    element.focus();
-    return true;
-  }
-  return false;
-}
+// Initialize app when DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+  window.app = new GyogyszerfeliratasApp();
+});
