@@ -190,7 +190,7 @@ function gyogyszerScanner(gyogyszerArray) {
 function setPreviewPrintListHeader(printType = 'feliratas') {
   let listaTitle = document.querySelector('#lista-title');
   let listaSubTitle = document.querySelector('#lista-subtitle');
-  listaTitle.innerHTML = `${szemelyNeve} - ${printType === 'feliratas' ? 'Felírandó gyógyszer(ek):' : 'GYÓGYSZERTÁRBÓL KI KELL VÁLTANI:'
+  listaTitle.innerHTML = `${szemelyNeve} - ${printType === 'feliratas' ? 'Felírandó gyógyszer(ek):' : 'Gyógyszer(ek) kiváltásra:'
     } `;
   listaSubTitle.innerHTML = `(Szül.: ${szemelySzuletesiDatum} - TAJ: ${szemelyTajSzam})`;
 }
